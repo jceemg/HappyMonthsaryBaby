@@ -1,0 +1,8 @@
+const $=s=>document.querySelector(s);let memories=JSON.parse(localStorage.getItem("memories")||"[]");
+$("#loginBtn").onclick=()=>{if($("#password").value==="CHANGE-ME"){$("#login").classList.add("hidden");$("#dash").classList.remove("hidden");load()}else alert("Incorrect password. Change the prototype password in js/admin.js or use the production auth later.")};
+function save(){localStorage.setItem("memories",JSON.stringify(memories))}
+function load(){memories=JSON.parse(localStorage.getItem("memories")||"[]");$("#letter").value=localStorage.getItem("letter")||"";render()}
+function render(){$("#list").innerHTML=memories.length?memories.map((m,i)=>`<div class="memory-admin">${m.type==="video"?`<video controls src="${m.url}"></video>`:`<img src="${m.url}">`}<div><strong>${m.caption||"Untitled"}</strong><br><small>${m.date||""} · ${m.category||""}</small></div><button onclick="removeMemory(${i})">Delete</button></div>`).join(""):"<p>No memories yet.</p>"}
+window.removeMemory=i=>{memories.splice(i,1);save();render()};
+$("#add").onclick=()=>{let f=$("#file").files[0];if(!f)return alert("Choose a photo or video.");let r=new FileReader();r.onload=()=>{memories.push({url:r.result,type:f.type.startsWith("video/")?"video":"image",caption:$("#caption").value,date:$("#date").value,category:$("#category").value});save();render();$("#file").value="";$("#caption").value="";$("#date").value="";$("#category").value=""};r.readAsDataURL(f)};
+$("#saveLetter").onclick=()=>{localStorage.setItem("letter",$("#letter").value);alert("Letter saved.")};
