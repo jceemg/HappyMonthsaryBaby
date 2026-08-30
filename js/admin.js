@@ -70,9 +70,12 @@ const $addBtn = $("#add");
 let pendingFiles = [];
 
 function setDropText() {
-  $drop.querySelector("p").innerHTML = pendingFiles.length
-    ? `<strong>${pendingFiles.length} file(s) ready.</strong><br>Drop more or click <strong>Add Memory</strong> to upload.`
-    : 'Drag &amp; drop photos here,<br>or <strong>click to browse</strong>';
+  if (!pendingFiles.length) {
+    $drop.querySelector("p").innerHTML = 'Drag &amp; drop photos here,<br>or <strong>click to browse</strong>';
+    return;
+  }
+  const names = pendingFiles.map(f => f.name).join(", ");
+  $drop.querySelector("p").innerHTML = `<strong>${pendingFiles.length} file(s) ready:</strong><br>${names}<br><small>Drop more or click <strong>Add Memory</strong> to upload.</small>`;
 }
 
 $drop.addEventListener("click", () => $file.click());
