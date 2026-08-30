@@ -18,6 +18,7 @@ export const firebaseConfig = {
 // Good enough for a private personal site; use Firebase Auth if you need real security.
 export const ADMIN_PASSWORD = "CHANGE-ME";
 
-// Free imgbb API key used to store uploaded photos/videos permanently.
-// Get yours at https://api.imgbb.com (free, email-only, no card).
-export const IMGBB_KEY = "78c69c713d5a67bf943cc3f14a3e637f";
+// Cloudinary credentials for reliable, permanent image/video uploads (free, no card).
+// Cloud name and unsigned upload preset from https://console.cloudinary.com
+export const CLOUD_NAME = "uu3sou1g";
+export const UPLOAD_PRESET = "monthsary";

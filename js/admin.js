@@ -1,5 +1,5 @@
 import { db } from "./firebase.js";
-import { ADMIN_PASSWORD, IMGBB_KEY } from "./firebase-config.js";
+import { ADMIN_PASSWORD, CLOUD_NAME, UPLOAD_PRESET } from "./firebase-config.js";
 import {
   collection,
   addDoc,
@@ -50,17 +50,20 @@ function load() {
   });
 }
 
-// Upload an image to imgbb (free, permanent, CORS-friendly) and return the
-// direct image URL. imgbb requires an API key but no credit card.
-async function uploadToHost(file) {
+// Upload a file to Cloudinary (free, permanent, reliable global CDN) and return
+// its secure URL. Uses an unsigned upload preset so no API secret is exposed.
+async function uploadToHost(file, isVideo) {
+  const typePath = isVideo ? "video" : "image";
+  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${typePath}/upload`;
   const fd = new FormData();
-  fd.append("image", file, file.name);
-  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: "POST", body: fd });
-  const j = await res.json();
-  if (!res.ok || !j.success) {
-    throw new Error(j && j.error && j.error.message ? j.error.message : "imgbb upload failed (" + res.status + ")");
+  fd.append("file", file);
+  fd.append("upload_preset", UPLOAD_PRESET);
+  const res = await fetch(url, { method: "POST", body: fd });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.secure_url) {
+    throw new Error((j.error && j.error.message) ? j.error.message : "Cloudinary upload failed (" + res.status + ")");
   }
-  return j.data.display_url || j.data.url;
+  return j.secure_url;
 }
 
 const $drop = $("#dropzone");
@@ -71,7 +74,7 @@ let pendingFiles = [];
 
 function setDropText() {
   if (!pendingFiles.length) {
-    $drop.querySelector("p").innerHTML = 'Drag &amp; drop photos here,<br>or <strong>click to browse</strong>';
+    $drop.querySelector("p").innerHTML = 'Drag &amp; drop photos or videos here,<br>or <strong>click to browse</strong>';
     return;
   }
   const names = pendingFiles.map(f => f.name).join(", ");
@@ -94,8 +97,9 @@ $file.addEventListener("change", () => {
   $drop.addEventListener(t, e => { e.preventDefault(); $drop.classList.remove("dragover"); })
 );
 $drop.addEventListener("drop", e => {
-  const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith("image/"));
-  if (e.dataTransfer?.files?.length && !files.length) { alert("imgbb only supports images (photos). Videos can't be uploaded here."); return; }
+  const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"));
+  const skipped = e.dataTransfer?.files?.length - files.length;
+  if (skipped > 0) alert(`${skipped} file(s) skipped — only photos and videos are supported.`);
   if (!files.length) return;
   pendingFiles = pendingFiles.concat(files);
   setDropText();
@@ -112,10 +116,11 @@ async function uploadFiles(files) {
     $addBtn.textContent = `Uploading ${i}/${files.length}...`;
     try {
       const f = files[i];
-      const url = await uploadToHost(f);
+      const isVideo = f.type.startsWith("video/");
+      const url = await uploadToHost(f, isVideo);
       await addDoc(collection(db, "memories"), {
         url,
-        type: "image",
+        type: isVideo ? "video" : "image",
         caption,
         date,
         category
@@ -131,7 +136,7 @@ async function uploadFiles(files) {
     $("#caption").value = "";
     $("#date").value = "";
     $("#category").value = "";
-    alert(`${ok} photo(s) added!`);
+    alert(`${ok} item(s) added!`);
   }
 }
 
