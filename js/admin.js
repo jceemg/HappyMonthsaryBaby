@@ -61,33 +61,81 @@ async function uploadToHost(file) {
   return url;
 }
 
-$("#add").onclick = async () => {
-  const f = $("#file").files[0];
-  const btn = $("#add");
-  if (!f) return alert("Choose a photo or video.");
-  btn.disabled = true;
-  btn.textContent = "Uploading...";
-  try {
-    const isVideo = f.type.startsWith("video/");
-    const url = await uploadToHost(f);
-    await addDoc(collection(db, "memories"), {
-      url,
-      type: isVideo ? "video" : "image",
-      caption: $("#caption").value,
-      date: $("#date").value,
-      category: $("#category").value
-    });
-    $("#file").value = "";
+const $drop = $("#dropzone");
+const $file = $("#file");
+const $addBtn = $("#add");
+
+let pendingFiles = [];
+
+function setDropText() {
+  $drop.querySelector("p").innerHTML = pendingFiles.length
+    ? `<strong>${pendingFiles.length} file(s) ready.</strong><br>Drop more or click <strong>Add Memory</strong> to upload.`
+    : 'Drag &amp; drop photos or videos here,<br>or <strong>click to browse</strong>';
+}
+
+$drop.addEventListener("click", () => $file.click());
+$file.addEventListener("change", () => {
+  if ($file.files.length) {
+    pendingFiles = pendingFiles.concat([...$file.files]);
+    setDropText();
+  }
+  $file.value = "";
+});
+
+["dragenter", "dragover"].forEach(t =>
+  $drop.addEventListener(t, e => { e.preventDefault(); $drop.classList.add("dragover"); })
+);
+["dragleave", "drop"].forEach(t =>
+  $drop.addEventListener(t, e => { e.preventDefault(); $drop.classList.remove("dragover"); })
+);
+$drop.addEventListener("drop", e => {
+  const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"));
+  if (!files.length) { alert("Only photos and videos are supported."); return; }
+  pendingFiles = pendingFiles.concat(files);
+  setDropText();
+});
+
+async function uploadFiles(files) {
+  $addBtn.disabled = true;
+  $addBtn.textContent = `Uploading 0/${files.length}...`;
+  const caption = $("#caption").value;
+  const date = $("#date").value;
+  const category = $("#category").value;
+  let ok = 0;
+  for (let i = 0; i < files.length; i++) {
+    $addBtn.textContent = `Uploading ${i}/${files.length}...`;
+    try {
+      const f = files[i];
+      const isVideo = f.type.startsWith("video/");
+      const url = await uploadToHost(f);
+      await addDoc(collection(db, "memories"), {
+        url,
+        type: isVideo ? "video" : "image",
+        caption,
+        date,
+        category
+      });
+      ok++;
+    } catch (err) {
+      alert(`"${files[i].name}" failed: ${err.message}`);
+    }
+  }
+  $addBtn.disabled = false;
+  $addBtn.textContent = "Add Memory";
+  if (ok) {
     $("#caption").value = "";
     $("#date").value = "";
     $("#category").value = "";
-    alert("Memory added!");
-  } catch (err) {
-    alert("Upload failed: " + err.message + "\n\nTip: if Catbox is unreachable, try again in a moment or use a smaller file.");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Add Memory";
+    alert(`${ok} memory(ies) added!`);
   }
+}
+
+$("#add").onclick = () => {
+  if (!pendingFiles.length) { alert("Choose or drag in a photo or video first."); return; }
+  const toUpload = pendingFiles;
+  pendingFiles = [];
+  setDropText();
+  uploadFiles(toUpload);
 };
 
 $("#saveLetter").onclick = async () => {
