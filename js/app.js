@@ -30,14 +30,8 @@ $("#openGift").onclick = () => { $("#opening").classList.add("hidden"); $("#site
 
 function renderTimeline() { $("#timeline").innerHTML = data.timeline.map(x => `<article class="timeline-event"><div class="timeline-date">${x[0]}</div><h3>${x[1]}</h3><p>${x[2]}</p></article>`).join(""); }
 function renderLove() { $("#loveGrid").innerHTML = data.love.map(x => `<article class="love-item"><h3>${x[0]}</h3><p>${x[1]}</p></article>`).join(""); }
-function renderFilters() {
-  let cats = ["all", ...new Set(memories.map(m => m.category).filter(Boolean))];
-  $("#filters").innerHTML = cats.map(c => `<button data-cat="${c}">${c[0].toUpperCase() + c.slice(1)}</button>`).join("");
-  document.querySelectorAll("[data-cat]").forEach(b => b.onclick = () => renderGallery(b.dataset.cat));
-}
-function renderGallery(cat = "all") {
-  let ms = cat === "all" ? memories : memories.filter(m => m.category === cat);
-  $("#gallery").innerHTML = ms.length ? ms.map(m => `<article class="memory">${m.type === "video" ? `<video controls src="${m.url}"></video>` : `<img loading="lazy" src="${m.url}" alt="">`}<p>${m.caption || ""}</p><small>${m.date || ""} · ${m.category || ""}</small></article>`).join("") : `<p class="empty">No memories yet. Add them from Admin.</p>`;
+function renderGallery() {
+  $("#gallery").innerHTML = memories.length ? memories.map(m => `<article class="memory">${m.type === "video" ? `<video controls src="${m.url}"></video>` : `<img loading="lazy" src="${m.url}" alt="">`}<p>${m.caption || ""}</p>${m.category ? `<small class="desc">${m.category}</small>` : ""}${m.date ? `<small>${m.date}</small>` : ""}</article>`).join("") : `<p class="empty">No memories yet. Add them from Admin.</p>`;
 }
 
 // Live-sync memories and letter from Firestore (updates appear for everyone,
@@ -45,7 +39,6 @@ function renderGallery(cat = "all") {
 function watchMemories() {
   onSnapshot(collection(db, "memories"), snap => {
     memories = snap.docs.map(d => d.data());
-    renderFilters();
     renderGallery();
   });
 }

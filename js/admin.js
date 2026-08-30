@@ -6,7 +6,8 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
-  setDoc
+  setDoc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 const $ = s => document.querySelector(s);
@@ -49,9 +50,24 @@ $("#loginBtn").onclick = () => {
 
 function render() {
   $("#list").innerHTML = memories.length
-    ? memories.map((m) => `<div class="memory-admin">${m.type === "video" ? `<video controls src="${m.url}"></video>` : `<img src="${m.url}">`}<div><strong>${m.caption || "Untitled"}</strong><br><small>${m.date || ""} · ${m.category || ""}</small></div><button class="del" type="button" onclick="removeMemory('${m.id}')">Delete</button></div>`).join("")
+    ? memories.map((m) => `<div class="memory-admin">${m.type === "video" ? `<video controls src="${m.url}"></video>` : `<img src="${m.url}">`}<div><strong>${m.caption || "Untitled"}</strong><br><small>${m.date || ""} · ${m.category || ""}</small></div><div class="mem-actions"><button class="edit" type="button" onclick="editMemory('${m.id}')">Edit</button><button class="del" type="button" onclick="removeMemory('${m.id}')">Delete</button></div></div>`).join("")
     : "<p>No memories yet. Add one above.</p>";
 }
+
+window.editMemory = async (id) => {
+  const m = memories.find(x => x.id === id);
+  if (!m) return;
+  const name = prompt("Edit the name:", m.caption || "");
+  if (name === null) return; // cancelled
+  if (!name.trim()) { alert("Name cannot be empty."); return; }
+  const description = prompt("Edit the description:", m.category || "") || "";
+  try {
+    await updateDoc(doc(db, "memories", id), { caption: name.trim(), category: description.trim() });
+    alert("Memory updated.");
+  } catch (err) {
+    alert("Could not update: " + err.message);
+  }
+};
 
 window.removeMemory = async (id) => {
   const m = memories.find(x => x.id === id);
@@ -169,7 +185,7 @@ $("#add").onclick = () => {
   if (!pendingFiles.length) { alert("Choose or drag in a photo or video first."); return; }
   if (!$("#caption").value.trim()) {
     $("#caption").focus();
-    alert("Please add a caption before saving.");
+    alert("Please add a name before saving.");
     return;
   }
   const toUpload = pendingFiles;
