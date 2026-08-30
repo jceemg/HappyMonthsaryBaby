@@ -50,9 +50,22 @@ function watchMemories() {
   });
 }
 
+function renderLetter(html) {
+  // If it's plain text (no HTML tags), upgrade it to paragraphs so newlines show.
+  if (html && !/<[a-z][\s\S]*>/i.test(html)) {
+    return html
+      .split(/\n{2,}/)
+      .map(block => block.replace(/\n/g, " ").trim())
+      .filter(Boolean)
+      .map(block => `<p>${block}</p>`)
+      .join("");
+  }
+  return html;
+}
+
 function loadLetter() {
   onSnapshot(doc(db, "content", "letter"), snap => {
-    $("#letterText").innerHTML = (snap.exists() && snap.data().html) ? snap.data().html : defaultLetter;
+    $("#letterText").innerHTML = renderLetter((snap.exists() && snap.data().html) ? snap.data().html : defaultLetter);
   });
 }
 
