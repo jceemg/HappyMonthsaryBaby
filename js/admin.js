@@ -12,6 +12,31 @@ import {
 const $ = s => document.querySelector(s);
 let memories = [];
 
+// Convert the stored HTML letter into plain text for easy editing.
+function htmlToText(html) {
+  if (!html) return html;
+  const d = document.createElement("div");
+  d.innerHTML = html;
+  // Turn </p> block boundaries into newlines so paragraphs read on separate lines.
+  d.querySelectorAll("p").forEach(p => p.append(d.ownerDocument.createTextNode("\n")));
+  return d.textContent.replace(/\n+/g, "\n").trim();
+}
+
+// Convert the edited plain text back into HTML paragraphs for the site.
+function textToHtml(text) {
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+  return escaped
+    .split(/\n{2,}/)                     // blank line = new paragraph
+    .map(block => block.replace(/\n/g, " ").trim())
+    .filter(Boolean)
+    .map(block => `<p>${block}</p>`)
+    .join("");
+}
+
 $("#loginBtn").onclick = () => {
   if ($("#password").value === ADMIN_PASSWORD) {
     $("#login").classList.add("hidden");
@@ -46,7 +71,7 @@ function load() {
     render();
   });
   onSnapshot(doc(db, "content", "letter"), snap => {
-    if (snap.exists()) $("#letter").value = snap.data().html;
+    if (snap.exists()) $("#letter").value = htmlToText(snap.data().html);
   });
 }
 
@@ -162,7 +187,10 @@ $("#clear").onclick = () => {
 };
 
 $("#saveLetter").onclick = async () => {
-  await setDoc(doc(db, "content", "letter"), { html: $("#letter").value });
+  const text = $("#letter").value.trim();
+  if (!text) { alert("Please write something in the letter before saving."); return; }
+  const html = textToHtml(text);
+  await setDoc(doc(db, "content", "letter"), { html });
   alert("Letter saved to the cloud.");
 };
 
