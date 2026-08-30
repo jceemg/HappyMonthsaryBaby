@@ -141,7 +141,12 @@ async function uploadFiles(files) {
 }
 
 $("#add").onclick = () => {
-  if (!pendingFiles.length) { alert("Choose or drag in a photo first."); return; }
+  if (!pendingFiles.length) { alert("Choose or drag in a photo or video first."); return; }
+  if (!$("#caption").value.trim()) {
+    $("#caption").focus();
+    alert("Please add a caption before saving.");
+    return;
+  }
   const toUpload = pendingFiles;
   pendingFiles = [];
   setDropText();
