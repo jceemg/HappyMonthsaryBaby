@@ -62,8 +62,25 @@ function loadLetter() {
   });
 }
 
+function loadHeroPhotos() {
+  onSnapshot(doc(db, "content", "photos"), snap => {
+    const d = snap.exists() ? snap.data() : {};
+    const fav = $("#favorite-photo");
+    const fin = $("#final-photo");
+    if (d.favorite) {
+      fav.innerHTML = `<img src="${d.favorite}" alt="favorite">`;
+      fav.classList.add("has-photo");
+    }
+    if (d.final) {
+      fin.innerHTML = `<img src="${d.final}" alt="final">`;
+      fin.classList.add("has-photo");
+    }
+  });
+}
+
 watchMemories();
 loadLetter();
+loadHeroPhotos();
 renderTimeline();
 renderLove();
 

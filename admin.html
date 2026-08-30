@@ -2,5 +2,12 @@
 <section id="login"><h1>Private Admin ♡</h1><p>Content Manager</p><input id="password" type="password" placeholder="Admin password"><button id="loginBtn">Enter</button><p class="note">Prototype login only. Production authentication belongs on the server/cloud.</p></section>
 <section id="dash" class="hidden"><header><h1>Website Manager</h1><a href="index.html">View site →</a></header>
 <section><h2>Add a Memory</h2><div id="dropzone"><div class="dz-icon">↧</div><p>Drag &amp; drop photos here<br>or <strong>click to browse</strong></p><input id="file" type="file" accept="image/*,video/*" multiple hidden></div><input id="caption" placeholder="Name (required)" required><input id="date" type="date"><input id="category" placeholder="Description"><div class="row"><button id="add">Add Memory</button><button id="clear" class="danger" type="button">Clear selection</button></div></section>
+<section><h2>Hero Photos (Favorite & Final)</h2>
+<div class="hero-drop-wrap"><div>
+<h3>Favorite Photo</h3><div class="hero-drop" id="drop-favorite"><div class="dz-icon">↧</div><p>Drop the favorite photo here<br>or <strong>click to browse</strong></p><input type="file" accept="image/*" hidden></div><div class="preview" id="preview-favorite"></div>
+</div><div>
+<h3>Final Photo</h3><div class="hero-drop" id="drop-final"><div class="dz-icon">↧</div><p>Drop the final photo here<br>or <strong>click to browse</strong></p><input type="file" accept="image/*" hidden></div><div class="preview" id="preview-final"></div>
+</div></div>
+</section>
 <section><h2>Memories</h2><div id="list"></div></section>
 <section><h2>Current Letter</h2><textarea id="letter" rows="14" placeholder="Write your letter here... (leave a blank line between paragraphs)"></textarea><div class="row"><button id="saveLetter">Save Letter</button><button id="deleteLetter" class="danger" type="button">Delete Letter</button></div></section></section></main><script type="module" src="js/admin.js"></script></body></html>

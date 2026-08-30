@@ -202,6 +202,53 @@ $("#clear").onclick = () => {
   }
 };
 
+// Hero photos: set the "Favorite" and "Final" photos shown on the site.
+function setupHeroDrop(label, dropId, previewId, field) {
+  const $drop = $("#" + dropId);
+  const $preview = $("#" + previewId);
+  const $input = $drop.querySelector("input[type=file]");
+  $drop.addEventListener("click", () => $input.click());
+  $input.addEventListener("change", () => {
+    if ($input.files.length) handle($input.files[0]);
+    $input.value = "";
+  });
+  ["dragenter", "dragover"].forEach(t =>
+    $drop.addEventListener(t, e => { e.preventDefault(); $drop.classList.add("dragover"); })
+  );
+  ["dragleave", "drop"].forEach(t =>
+    $drop.addEventListener(t, e => { e.preventDefault(); $drop.classList.remove("dragover"); })
+  );
+  $drop.addEventListener("drop", e => {
+    const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith("image/"));
+    if (!files.length) { alert("Please drop an image."); return; }
+    handle(files[0]);
+  });
+  async function handle(file) {
+    $drop.classList.add("saved");
+    $preview.innerHTML = '<div class="ph">Uploading...</div>';
+    try {
+      const url = await uploadToHost(file, false);
+      await setDoc(doc(db, "content", "photos"), { [field]: url }, { merge: true });
+      $preview.innerHTML = `<img src="${url}" alt="${label}">`;
+      alert(label + " photo updated.");
+    } catch (err) {
+      $preview.innerHTML = "";
+      $drop.classList.remove("saved");
+      alert("Could not upload: " + err.message);
+    }
+  }
+  // Show any already-saved photo when the panel loads (and live-updates).
+  onSnapshot(doc(db, "content", "photos"), snap => {
+    const d = snap.exists() ? snap.data() : {};
+    if (d[field]) {
+      $preview.innerHTML = `<img src="${d[field]}" alt="${label}">`;
+      $drop.classList.add("saved");
+    }
+  });
+}
+setupHeroDrop("Favorite", "drop-favorite", "preview-favorite", "favorite");
+setupHeroDrop("Final", "drop-final", "preview-final", "final");
+
 $("#saveLetter").onclick = async () => {
   const text = $("#letter").value.trim();
   if (!text) { alert("Please write something in the letter before saving."); return; }
