@@ -1,5 +1,5 @@
 import { db } from "./firebase.js";
-import { ADMIN_PASSWORD } from "./firebase-config.js";
+import { ADMIN_PASSWORD, IMGBB_KEY } from "./firebase-config.js";
 import {
   collection,
   addDoc,
@@ -50,18 +50,17 @@ function load() {
   });
 }
 
-// Upload a file to a free permanent host (catbox.moe). Returns the public URL.
-// We use catbox because it needs no account, no API key, and no credit card,
-// and images/videos are kept permanently.
+// Upload an image to imgbb (free, permanent, CORS-friendly) and return the
+// direct image URL. imgbb requires an API key but no credit card.
 async function uploadToHost(file) {
   const fd = new FormData();
-  fd.append("reqtype", "fileupload");
-  fd.append("fileToUpload", file, file.name);
-  const res = await fetch("https://catbox.moe/user/api.php", { method: "POST", body: fd });
-  if (!res.ok) throw new Error("Host upload failed (" + res.status + ")");
-  const url = (await res.text()).trim();
-  if (!/^https?:\/\//.test(url)) throw new Error("Host returned an error: " + url);
-  return url;
+  fd.append("image", file, file.name);
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: "POST", body: fd });
+  const j = await res.json();
+  if (!res.ok || !j.success) {
+    throw new Error(j && j.error && j.error.message ? j.error.message : "imgbb upload failed (" + res.status + ")");
+  }
+  return j.data.display_url || j.data.url;
 }
 
 const $drop = $("#dropzone");
@@ -73,7 +72,7 @@ let pendingFiles = [];
 function setDropText() {
   $drop.querySelector("p").innerHTML = pendingFiles.length
     ? `<strong>${pendingFiles.length} file(s) ready.</strong><br>Drop more or click <strong>Add Memory</strong> to upload.`
-    : 'Drag &amp; drop photos or videos here,<br>or <strong>click to browse</strong>';
+    : 'Drag &amp; drop photos here,<br>or <strong>click to browse</strong>';
 }
 
 $drop.addEventListener("click", () => $file.click());
@@ -92,8 +91,9 @@ $file.addEventListener("change", () => {
   $drop.addEventListener(t, e => { e.preventDefault(); $drop.classList.remove("dragover"); })
 );
 $drop.addEventListener("drop", e => {
-  const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"));
-  if (!files.length) { alert("Only photos and videos are supported."); return; }
+  const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith("image/"));
+  if (e.dataTransfer?.files?.length && !files.length) { alert("imgbb only supports images (photos). Videos can't be uploaded here."); return; }
+  if (!files.length) return;
   pendingFiles = pendingFiles.concat(files);
   setDropText();
 });
@@ -109,11 +109,10 @@ async function uploadFiles(files) {
     $addBtn.textContent = `Uploading ${i}/${files.length}...`;
     try {
       const f = files[i];
-      const isVideo = f.type.startsWith("video/");
       const url = await uploadToHost(f);
       await addDoc(collection(db, "memories"), {
         url,
-        type: isVideo ? "video" : "image",
+        type: "image",
         caption,
         date,
         category
@@ -129,12 +128,12 @@ async function uploadFiles(files) {
     $("#caption").value = "";
     $("#date").value = "";
     $("#category").value = "";
-    alert(`${ok} memory(ies) added!`);
+    alert(`${ok} photo(s) added!`);
   }
 }
 
 $("#add").onclick = () => {
-  if (!pendingFiles.length) { alert("Choose or drag in a photo or video first."); return; }
+  if (!pendingFiles.length) { alert("Choose or drag in a photo first."); return; }
   const toUpload = pendingFiles;
   pendingFiles = [];
   setDropText();
