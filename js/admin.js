@@ -24,12 +24,15 @@ $("#loginBtn").onclick = () => {
 
 function render() {
   $("#list").innerHTML = memories.length
-    ? memories.map((m) => `<div class="memory-admin">${m.type === "video" ? `<video controls src="${m.url}"></video>` : `<img src="${m.url}">`}<div><strong>${m.caption || "Untitled"}</strong><br><small>${m.date || ""} · ${m.category || ""}</small></div><button onclick="removeMemory('${m.id}')">Delete</button></div>`).join("")
+    ? memories.map((m) => `<div class="memory-admin">${m.type === "video" ? `<video controls src="${m.url}"></video>` : `<img src="${m.url}">`}<div><strong>${m.caption || "Untitled"}</strong><br><small>${m.date || ""} · ${m.category || ""}</small></div><button class="del" type="button" onclick="removeMemory('${m.id}')">Delete</button></div>`).join("")
     : "<p>No memories yet. Add one above.</p>";
 }
 
 window.removeMemory = async (id) => {
-  if (!confirm("Delete this memory?")) return;
+  const m = memories.find(x => x.id === id);
+  const label = m && (m.caption || m.date) ? `"${m.caption || m.date}"` : "this memory";
+  if (!confirm(`Really delete ${label}?`)) return;
+  if (!confirm(`Delete ${label} for good? This can't be undone.`)) return;
   try {
     await deleteDoc(doc(db, "memories", id));
   } catch (err) {
@@ -136,6 +139,14 @@ $("#add").onclick = () => {
   pendingFiles = [];
   setDropText();
   uploadFiles(toUpload);
+};
+
+$("#clear").onclick = () => {
+  if (!pendingFiles.length) { alert("Nothing selected to clear."); return; }
+  if (confirm(`Clear ${pendingFiles.length} selected file(s)?`)) {
+    pendingFiles = [];
+    setDropText();
+  }
 };
 
 $("#saveLetter").onclick = async () => {
