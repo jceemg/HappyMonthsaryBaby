@@ -2,8 +2,7 @@ import { db } from "./firebase.js";
 import {
   collection,
   onSnapshot,
-  doc,
-  getDoc
+  doc
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 const data = {
@@ -52,7 +51,7 @@ function watchMemories() {
 }
 
 function loadLetter() {
-  getDoc(doc(db, "content", "letter")).then(snap => {
+  onSnapshot(doc(db, "content", "letter"), snap => {
     $("#letterText").innerHTML = (snap.exists() && snap.data().html) ? snap.data().html : defaultLetter;
   });
 }

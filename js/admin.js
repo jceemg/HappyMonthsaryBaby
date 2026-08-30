@@ -165,3 +165,15 @@ $("#saveLetter").onclick = async () => {
   await setDoc(doc(db, "content", "letter"), { html: $("#letter").value });
   alert("Letter saved to the cloud.");
 };
+
+$("#deleteLetter").onclick = async () => {
+  if (!confirm("Delete the saved letter? The site will go back to its default message.")) return;
+  if (!confirm("Delete the letter for good? This can't be undone.")) return;
+  try {
+    await deleteDoc(doc(db, "content", "letter"));
+    $("#letter").value = "";
+    alert("Letter deleted.");
+  } catch (err) {
+    alert("Could not delete: " + err.message);
+  }
+};
