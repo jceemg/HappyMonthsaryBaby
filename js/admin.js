@@ -18,9 +18,11 @@ function htmlToText(html) {
   if (!html) return html;
   const d = document.createElement("div");
   d.innerHTML = html;
-  // Turn </p> block boundaries into newlines so paragraphs read on separate lines.
-  d.querySelectorAll("p").forEach(p => p.append(d.ownerDocument.createTextNode("\n")));
-  return d.textContent.replace(/\n+/g, "\n").trim();
+  // Collect each paragraph as its own block (blank line = paragraph break).
+  const parts = [];
+  d.querySelectorAll("p").forEach(p => parts.push(p.innerText.trim()));
+  if (!parts.length) return d.textContent.trim();
+  return parts.join("\n\n");
 }
 
 // Convert the edited plain text back into HTML paragraphs for the site.
